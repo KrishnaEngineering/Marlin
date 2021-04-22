@@ -131,6 +131,7 @@
 //#define BLUETOOTH
 
 // Choose the name from boards.h that matches your setup
+#define MOTHERBOARD BOARD_VIKAY_MEGA_V10
 #ifndef MOTHERBOARD
   #define MOTHERBOARD BOARD_RAMPS_14_EFB
 #endif
