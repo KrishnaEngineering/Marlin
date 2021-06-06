@@ -24,9 +24,9 @@
  * Creality 4.2.x (STM32F103RET6) board pin assignments
  */
 
-#if NOT_TARGET(__STM32F1__)
-  #error "Oops! Select an STM32F1 board in 'Tools > Board.'"
-#elif HOTENDS > 1 || E_STEPPERS > 1
+#include "env_validate.h"
+
+#if HOTENDS > 1 || E_STEPPERS > 1
   #error "Creality V4 only supports one hotend / E-stepper. Comment out this line to continue."
 #endif
 
@@ -58,10 +58,12 @@
 //
 // Servos
 //
-#ifndef HAS_PIN_27_BOARD
-  #define SERVO0_PIN                        PB0   // BLTouch OUT
-#else
-  #define SERVO0_PIN                        PC6
+#ifndef SERVO0_PIN
+  #ifndef HAS_PIN_27_BOARD
+    #define SERVO0_PIN                      PB0   // BLTouch OUT
+  #else
+    #define SERVO0_PIN                      PC6
+  #endif
 #endif
 
 //
@@ -71,7 +73,9 @@
 #define Y_STOP_PIN                          PA6
 #define Z_STOP_PIN                          PA7
 
-#define Z_MIN_PROBE_PIN                     PB1   // BLTouch IN
+#ifndef Z_MIN_PROBE_PIN
+  #define Z_MIN_PROBE_PIN                   PB1   // BLTouch IN
+#endif
 
 //
 // Filament Runout Sensor

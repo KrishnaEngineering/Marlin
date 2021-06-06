@@ -29,7 +29,7 @@
 #include "../shared/Delay.h"
 
 #ifdef USBCON
-  DefaultSerial MSerial(false, SerialUSB);
+  DefaultSerial1 MSerial0(false, SerialUSB);
 #endif
 
 #if ENABLED(SRAM_EEPROM_EMULATION)
@@ -63,6 +63,12 @@ TERN_(POSTMORTEM_DEBUGGING, extern void install_min_serial());
 void HAL_init() {
   FastIO_init();
 
+  // Ensure F_CPU is a constant expression.
+  // If the compiler breaks here, it means that delay code that should compute at compile time will not work.
+  // So better safe than sorry here.
+  constexpr int cpuFreq = F_CPU;
+  UNUSED(cpuFreq);
+
   #if ENABLED(SDSUPPORT) && DISABLED(SDIO_SUPPORT) && (defined(SDSS) && SDSS != -1)
     OUT_WRITE(SDSS, HIGH); // Try to set SDSS inactive before any other SPI users start up
   #endif
@@ -89,6 +95,12 @@ void HAL_init() {
 
   #if HAS_SD_HOST_DRIVE
     MSC_SD_init();                         // Enable USB SD card access
+  #endif
+
+  #if PIN_EXISTS(USB_CONNECT)
+    OUT_WRITE(USB_CONNECT_PIN, !USB_CONNECT_INVERTING);  // USB clear connection
+    delay(1000);                                         // Give OS time to notice
+    WRITE(USB_CONNECT_PIN, USB_CONNECT_INVERTING);
   #endif
 }
 
@@ -127,6 +139,8 @@ uint8_t HAL_get_reset_source() {
   ;
 }
 
+void HAL_reboot() { NVIC_SystemReset(); }
+
 void _delay_ms(const int delay_ms) { delay(delay_ms); }
 
 extern "C" {
@@ -141,8 +155,8 @@ extern "C" {
 void HAL_adc_start_conversion(const uint8_t adc_pin) { HAL_adc_result = analogRead(adc_pin); }
 uint16_t HAL_adc_get_result() { return HAL_adc_result; }
 
-// Reset the system (to initiate a firmware flash)
-void flashFirmware(const int16_t) { NVIC_SystemReset(); }
+// Reset the system to initiate a firmware flash
+void flashFirmware(const int16_t) { HAL_reboot(); }
 
 // Maple Compatibility
 volatile uint32_t systick_uptime_millis = 0;

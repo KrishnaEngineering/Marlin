@@ -283,7 +283,7 @@ void CommonHandler_C(ContextStateFrame * frame, unsigned long lr, unsigned long 
     savedFrame.CFSR = 0;
 
     frame->pc = (uint32_t)resume_from_fault; // Patch where to return to
-    frame->lr = 0xdeadbeef;  // If our handler returns (it shouldn't), let's make it trigger an exception immediately
+    frame->lr = 0xDEADBEEF;  // If our handler returns (it shouldn't), let's make it trigger an exception immediately
     frame->xpsr = _BV(24);   // Need to clean the PSR register to thumb II only
     MinSerial::force_using_default_output = true;
     return; // The CPU will resume in our handler hopefully, and we'll try to use default serial output
@@ -320,8 +320,8 @@ void hook_cpu_exceptions() {
     // So we'll simply mask the top 8 bits of the first handler as an hint of being in the flash or not -that's poor and will
     // probably break if the flash happens to be more than 128MB, but in this case, we are not magician, we need help from outside.
 
-    unsigned long * vecAddr = (unsigned long*)get_vtor();
-    SERIAL_ECHO("Vector table addr: ");
+    unsigned long *vecAddr = (unsigned long*)get_vtor();
+    SERIAL_ECHOPGM("Vector table addr: ");
     SERIAL_PRINTLN(get_vtor(), HEX);
 
     #ifdef VECTOR_TABLE_SIZE
@@ -348,7 +348,7 @@ void hook_cpu_exceptions() {
       // 128 bytes alignement is required for writing the VTOR register
       alignas(128) static unsigned long vectable[VECTOR_TABLE_SENTINEL];
 
-      SERIAL_ECHO("Detected vector table size: ");
+      SERIAL_ECHOPGM("Detected vector table size: ");
       SERIAL_PRINTLN(vec_size, HEX);
     #endif
 
@@ -372,7 +372,7 @@ void hook_cpu_exceptions() {
 
     HW_REG(0xE000ED08) = (unsigned long)vectable | _BV32(29); // 29th bit is for telling the CPU the table is now in SRAM (should be present already)
 
-    SERIAL_ECHOLN("Installed fault handlers");
+    SERIAL_ECHOLNPGM("Installed fault handlers");
   #endif
 }
 

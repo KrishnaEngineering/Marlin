@@ -72,6 +72,7 @@ jobs:
 
         # STM32 (ST) Environments
 
+        - STM32F103RC_btt_stm32
         - STM32F407VE_black
         - STM32F401VE_STEVAL
         - BIGTREE_BTT002
@@ -86,9 +87,12 @@ jobs:
         - FLYF407ZG
         - rumba32
         - LERDGEX
+        - LERDGEK
         - mks_robin_nano35_stm32
         - NUCLEO_F767ZI
         - REMRAM_V1
+        - BTT_SKR_SE_BX
+        - chitu_f103
 
         # Put lengthy tests last
 
@@ -98,12 +102,30 @@ jobs:
         # Non-working environment tests
         #- at90usb1286_cdc
         #- STM32F103CB_malyan
+        #- STM32F103RE
         #- mks_robin_mini
 
     steps:
 
+    - name: Check out the PR
+      uses: actions/checkout@v2
+
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+
     - name: Select Python 3.7
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: '3.7' # Version range or exact version of a Python version to use, using semvers version range syntax.
         architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
@@ -112,9 +134,6 @@ jobs:
       run: |
         pip install -U https://github.com/platformio/platformio-core/archive/develop.zip
         platformio update
-
-    - name: Check out the PR
-      uses: actions/checkout@v2
 
     - name: Run ${{ matrix.test-platform }} Tests
       run: |

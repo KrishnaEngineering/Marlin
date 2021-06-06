@@ -47,7 +47,7 @@ void I2CPositionEncoder::init(const uint8_t address, const AxisEnum axis) {
   encoderAxis = axis;
   i2cAddress = address;
 
-  initialized++;
+  initialized = true;
 
   SERIAL_ECHOLNPAIR("Setting up encoder on ", AS_CHAR(axis_codes[encoderAxis]), " axis, addr = ", address);
 
@@ -209,8 +209,7 @@ void I2CPositionEncoder::set_homed() {
     delay(10);
 
     zeroOffset = get_raw_count();
-    homed++;
-    trusted++;
+    homed = trusted = true;
 
     #ifdef I2CPE_DEBUG
       SERIAL_CHAR(axis_codes[encoderAxis]);
@@ -338,7 +337,7 @@ bool I2CPositionEncoder::test_axis() {
   ec = false;
 
   xyze_pos_t startCoord, endCoord;
-  LOOP_XYZ(a) {
+  LOOP_LINEAR_AXES(a) {
     startCoord[a] = planner.get_axis_position_mm((AxisEnum)a);
     endCoord[a] = planner.get_axis_position_mm((AxisEnum)a);
   }
@@ -393,7 +392,7 @@ void I2CPositionEncoder::calibrate_steps_mm(const uint8_t iter) {
   travelDistance = endDistance - startDistance;
 
   xyze_pos_t startCoord, endCoord;
-  LOOP_XYZ(a) {
+  LOOP_LINEAR_AXES(a) {
     startCoord[a] = planner.get_axis_position_mm((AxisEnum)a);
     endCoord[a] = planner.get_axis_position_mm((AxisEnum)a);
   }
@@ -820,11 +819,11 @@ int8_t I2CPositionEncodersMgr::parse() {
 void I2CPositionEncodersMgr::M860() {
   if (parse()) return;
 
-  const bool hasU = parser.seen('U'), hasO = parser.seen('O');
+  const bool hasU = parser.seen_test('U'), hasO = parser.seen_test('O');
 
   if (I2CPE_idx == 0xFF) {
-    LOOP_XYZE(i) {
-      if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
+    LOOP_LOGICAL_AXES(i) {
+      if (!I2CPE_anyaxis || parser.seen_test(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) report_position(idx, hasU, hasO);
       }
@@ -850,7 +849,7 @@ void I2CPositionEncodersMgr::M861() {
   if (parse()) return;
 
   if (I2CPE_idx == 0xFF) {
-    LOOP_XYZE(i) {
+    LOOP_LOGICAL_AXES(i) {
       if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) report_status(idx);
@@ -878,7 +877,7 @@ void I2CPositionEncodersMgr::M862() {
   if (parse()) return;
 
   if (I2CPE_idx == 0xFF) {
-    LOOP_XYZE(i) {
+    LOOP_LOGICAL_AXES(i) {
       if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) test_axis(idx);
@@ -909,7 +908,7 @@ void I2CPositionEncodersMgr::M863() {
   const uint8_t iterations = constrain(parser.byteval('P', 1), 1, 10);
 
   if (I2CPE_idx == 0xFF) {
-    LOOP_XYZE(i) {
+    LOOP_LOGICAL_AXES(i) {
       if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) calibrate_steps_mm(idx, iterations);
@@ -957,10 +956,10 @@ void I2CPositionEncodersMgr::M864() {
     return;
   }
   else {
-         if (parser.seen('X')) newAddress = I2CPE_PRESET_ADDR_X;
-    else if (parser.seen('Y')) newAddress = I2CPE_PRESET_ADDR_Y;
-    else if (parser.seen('Z')) newAddress = I2CPE_PRESET_ADDR_Z;
-    else if (parser.seen('E')) newAddress = I2CPE_PRESET_ADDR_E;
+         if (parser.seen_test('X')) newAddress = I2CPE_PRESET_ADDR_X;
+    else if (parser.seen_test('Y')) newAddress = I2CPE_PRESET_ADDR_Y;
+    else if (parser.seen_test('Z')) newAddress = I2CPE_PRESET_ADDR_Z;
+    else if (parser.seen_test('E')) newAddress = I2CPE_PRESET_ADDR_E;
     else return;
   }
 
@@ -985,7 +984,7 @@ void I2CPositionEncodersMgr::M865() {
   if (parse()) return;
 
   if (!I2CPE_addr) {
-    LOOP_XYZE(i) {
+    LOOP_LOGICAL_AXES(i) {
       if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) report_module_firmware(encoders[idx].get_address());
@@ -1013,10 +1012,10 @@ void I2CPositionEncodersMgr::M865() {
 void I2CPositionEncodersMgr::M866() {
   if (parse()) return;
 
-  const bool hasR = parser.seen('R');
+  const bool hasR = parser.seen_test('R');
 
   if (I2CPE_idx == 0xFF) {
-    LOOP_XYZE(i) {
+    LOOP_LOGICAL_AXES(i) {
       if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) {
@@ -1054,7 +1053,7 @@ void I2CPositionEncodersMgr::M867() {
   const int8_t onoff = parser.seenval('S') ? parser.value_int() : -1;
 
   if (I2CPE_idx == 0xFF) {
-    LOOP_XYZE(i) {
+    LOOP_LOGICAL_AXES(i) {
       if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) {
@@ -1090,7 +1089,7 @@ void I2CPositionEncodersMgr::M868() {
   const float newThreshold = parser.seenval('T') ? parser.value_float() : -9999;
 
   if (I2CPE_idx == 0xFF) {
-    LOOP_XYZE(i) {
+    LOOP_LOGICAL_AXES(i) {
       if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) {
@@ -1124,7 +1123,7 @@ void I2CPositionEncodersMgr::M869() {
   if (parse()) return;
 
   if (I2CPE_idx == 0xFF) {
-    LOOP_XYZE(i) {
+    LOOP_LOGICAL_AXES(i) {
       if (!I2CPE_anyaxis || parser.seen(axis_codes[i])) {
         const uint8_t idx = idx_from_axis(AxisEnum(i));
         if ((int8_t)idx >= 0) report_error(idx);
